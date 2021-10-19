@@ -10,8 +10,6 @@ import utility_functions_flu as flu_utils
 import utility_functions_general as gen_utils
 from utility_functions_beast import run_beast, read_beast_log
 
-aln_name = "./resources/flu_H3N2/H3N2_HA_2011_2013.fasta"
-tree_name = "./resources/flu_H3N2/H3N2_HA_2011_2013.nwk"
 
 RUN_TREETIME = True
 RUN_LSD = True
@@ -59,7 +57,7 @@ def _run_beast(N_leaves, subtree_filename, out_dir, res_file):
             pass
     beast_prefix = os.path.join(beast_out_dir, os.path.split(subtree_filename)[-1][:-4])  # truncate '.nwk'
     run_beast(subtree_filename, aln_name, dates, beast_prefix,
-    template_file="./resources/beast/template_bedford_et_al_2015.xml",
+    template_file=template_file,
     log_post_process=beast_log_post_process)
 
 def sample_subtree(out_dir, N_leaves, subtree_fname_suffix):
@@ -71,7 +69,7 @@ def sample_subtree(out_dir, N_leaves, subtree_fname_suffix):
             pass
     subtree_fname_format = "H3N2_HA_2011_2013_{}_{}.nwk".format(N_leaves, subtree_fname_suffix)
     subtree_filename = os.path.join(subtrees_dir, subtree_fname_format)
-    tree = flu_utils.subtree_with_same_root(tree_name, N_leaves, subtree_filename)
+    tree = flu_utils.subtree_with_same_root(tree_name, N_leaves, subtree_filename, aln_name)
     N_leaves = tree.count_terminals()
     return subtree_filename, N_leaves
 
@@ -83,9 +81,12 @@ if __name__ == "__main__":
     treetime_res_file = sys.argv[4]
     lsd_res_file = sys.argv[5]
     beast_res_file = sys.argv[6]
+    aln_name = sys.argv[7]
+    tree_name = sys.argv[8]
+    template_file = sys.argv[9]
 
-    if len(sys.argv) > 7:
-        lsd_params = sys.argv[7].split("|")
+    if len(sys.argv) > 10:
+        lsd_params = sys.argv[10].split("|")
     else:
         lsd_params = ['-c', '-r', 'a', '-v']
 

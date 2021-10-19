@@ -268,7 +268,7 @@ def run_beast(tree, aln, dates, out_filename_prefix, template_file, log_post_pro
     config_filename = out_filename_prefix + ".config.xml"
     config_xml = create_beast_xml(tree, aln, dates, out_filename_prefix, template_file)
     config_xml.write(config_filename)
-    call = ["java", "-jar", BEAST_BIN, "-beagle_off", "-overwrite",  config_filename]
+    call = [BEAST_BIN, "-overwrite",  config_filename]
     subprocess.call(call)
 
     #  process log, save the data to a pivot table

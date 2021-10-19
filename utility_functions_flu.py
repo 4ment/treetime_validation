@@ -98,7 +98,7 @@ def dates_from_flu_tree(tree):
                 if date_from_seq_name(k.name) is not None}
     return dates
 
-def subtree_with_same_root(tree, Nleaves, outfile, optimize=True):
+def subtree_with_same_root(tree, Nleaves, outfile, aln, optimize=True):
     """
     Sample subtree of the given tree so that the root of the subtree is that of
     the original tree.
@@ -156,7 +156,6 @@ def subtree_with_same_root(tree, Nleaves, outfile, optimize=True):
     if optimize:
         import treetime
         dates = dates_from_flu_tree(treecopy)
-        aln = './resources/flu_H3N2/H3N2_HA_2011_2013.fasta'
         tt = treetime.TreeAnc(tree=treecopy, aln=aln,gtr='Jukes-Cantor')
         tt.optimize_seq_and_branch_len(prune_short=False)
         Phylo.write(tt.tree, outfile, 'newick')
