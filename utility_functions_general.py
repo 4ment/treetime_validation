@@ -13,7 +13,6 @@ import datetime
 import os, copy
 from scipy.stats import linregress
 from collections import Counter
-import StringIO
 
 
 def remove_polytomies(tree):

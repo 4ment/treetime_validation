@@ -5,18 +5,14 @@ import os,sys
 import datetime
 import subprocess
 import re
+import click
 
 import utility_functions_flu as flu_utils
 import utility_functions_general as gen_utils
 from utility_functions_beast import run_beast, read_beast_log
 
 
-RUN_TREETIME = True
-RUN_LSD = True
-RUN_BEAST = True
-
-
-def _run_beast(N_leaves, subtree_filename, out_dir, res_file):
+def _run_beast(N_leaves, subtree_filename, out_dir, res_file, aln_name, template_file):
 
     def beast_log_post_process(log_file):
         df = read_beast_log(log_file, np.max(dates.values()))
@@ -60,7 +56,7 @@ def _run_beast(N_leaves, subtree_filename, out_dir, res_file):
     template_file=template_file,
     log_post_process=beast_log_post_process)
 
-def sample_subtree(out_dir, N_leaves, subtree_fname_suffix):
+def sample_subtree(out_dir, N_leaves, subtree_fname_suffix, tree_name, aln_name):
     subtrees_dir = os.path.join(out_dir, "subtrees")
     if not os.path.exists(subtrees_dir):
         try:
@@ -69,53 +65,54 @@ def sample_subtree(out_dir, N_leaves, subtree_fname_suffix):
             pass
     subtree_fname_format = "H3N2_HA_2011_2013_{}_{}.nwk".format(N_leaves, subtree_fname_suffix)
     subtree_filename = os.path.join(subtrees_dir, subtree_fname_format)
+    print(tree_name, N_leaves, subtree_filename, aln_name)
     tree = flu_utils.subtree_with_same_root(tree_name, N_leaves, subtree_filename, aln_name)
     N_leaves = tree.count_terminals()
     return subtree_filename, N_leaves
 
-if __name__ == "__main__":
-
-    N_leaves = int(sys.argv[1])
-    out_dir = sys.argv[2]
-    subtree_fname_suffix = sys.argv[3]
-    treetime_res_file = sys.argv[4]
-    lsd_res_file = sys.argv[5]
-    beast_res_file = sys.argv[6]
-    aln_name = sys.argv[7]
-    tree_name = sys.argv[8]
-    template_file = sys.argv[9]
-
-    if len(sys.argv) > 10:
-        lsd_params = sys.argv[10].split("|")
+@click.command()
+@click.option('--size', required=True, type=int, help='number of leaves')
+@click.option('--out_dir', type=click.UNPROCESSED, required=True, help='working directory')
+@click.option('--suffix', type=click.UNPROCESSED, required=True, help='number of leaves')
+@click.option('--treetime_file', type=click.UNPROCESSED, default=None, help='treetime output file')
+@click.option('--lsd_file', type=click.UNPROCESSED, default=None, help='lsd output file')
+@click.option('--beast_file', type=click.UNPROCESSED, default=None, help='beast output file')
+@click.option('--aln_file', required=True, type=click.UNPROCESSED, help='alignment file')
+@click.option('--tree_file', required=True, type=click.UNPROCESSED, help='tree file')
+@click.option('--template_file', required=True, type=click.UNPROCESSED, help='beast template file')
+@click.option('--lsd_params', help='additional lsd parameters')
+def run(size, out_dir, suffix, treetime_file, lsd_file, beast_file, aln_file, tree_file, template_file, lsd_params):
+    if lsd_params is not None:
+        lsd_params = lsd_params.split("|")
     else:
         lsd_params = ['-c', '-r', 'a', '-v']
 
 
 
     #  Sample subtree
-    subtree_filename, N_leaves = sample_subtree(out_dir, N_leaves, subtree_fname_suffix)
+    subtree_filename, size = sample_subtree(out_dir, size, suffix, tree_file, aln_file)
 
-    if RUN_TREETIME:
-        dates = flu_utils.dates_from_flu_tree(tree_name)
+    if treetime_file is not None:
+        dates = flu_utils.dates_from_flu_tree(tree_file)
         myTree = treetime.TreeTime(gtr='Jukes-Cantor',
-            tree=subtree_filename, aln=aln_name, dates=dates,
+            tree=subtree_filename, aln=aln_file, dates=dates,
             debug=False, verbose=4)
         myTree.optimize_seq_and_branch_len(reuse_branch_len=True, prune_short=True, max_iter=5, infer_gtr=False)
         start = datetime.datetime.now()
         myTree.run(root='best', relaxed_clock=False, max_iter=3, resolve_polytomies=True, do_marginal=False)
         end = datetime.datetime.now()
 
-        if not os.path.exists(treetime_res_file):
+        if not os.path.exists(treetime_file):
             try:
-                with open(treetime_res_file, 'w') as of:
+                with open(treetime_file, 'w') as of:
                     of.write("#Filename,N_leaves,Tmrca,Mu,R^2(initial clock),R^2(internal nodes),Runtime\n")
             except:
                 pass
 
-        with open(treetime_res_file, 'a') as of:
+        with open(treetime_file, 'a') as of:
             of.write("{},{},{},{},{},{},{}\n".format(
                 subtree_filename,
-                str(N_leaves),
+                str(size),
                 str(myTree.tree.root.numdate),
                 str(myTree.date2dist.clock_rate),
                 str(myTree.date2dist.r_val),
@@ -126,7 +123,7 @@ if __name__ == "__main__":
         print ("Skip TreeTime run")
 
 
-    if RUN_LSD:
+    if lsd_file is not None:
         lsd_outdir = os.path.join(out_dir, 'LSD_out')
         #  run LSD for the subtree:
         if not os.path.exists(lsd_outdir):
@@ -143,15 +140,15 @@ if __name__ == "__main__":
         try:
             if float(mu) > 0:
 
-                if not os.path.exists(lsd_res_file):
+                if not os.path.exists(lsd_file):
                     try:
-                        with open(lsd_res_file, 'w') as of:
+                        with open(lsd_file, 'w') as of:
                             of.write("#Filename,N_leaves,Tmrca,Mu,Runtime,Objective\n")
                     except:
                         pass
 
-                with open(lsd_res_file, "a") as of:
-                    of.write(",".join([subtree_filename, str(N_leaves), tmrca, mu, runtime, objective]))
+                with open(lsd_file, "a") as of:
+                    of.write(",".join([subtree_filename, str(size), tmrca, mu, runtime, objective]))
                     of.write("\n")
         except:
             pass
@@ -160,10 +157,11 @@ if __name__ == "__main__":
     else:
         print ("Skip LSD run")
 
-    if RUN_BEAST:
-        _run_beast(N_leaves, subtree_filename, out_dir, beast_res_file)
+    if beast_file is not None:
+        _run_beast(size, subtree_filename, out_dir, beast_file, aln, template_file)
 
-
+if __name__ == "__main__":
+    run()
 
 
 

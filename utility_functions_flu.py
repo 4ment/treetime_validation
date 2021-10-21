@@ -14,7 +14,6 @@ import os, copy
 import matplotlib.pyplot as plt
 from scipy.stats import linregress
 from collections import Counter
-import StringIO
 import treetime
 from utility_functions_general import remove_polytomies
 from utility_functions_beast import run_beast, create_beast_xml, read_beast_log
@@ -120,7 +119,6 @@ def subtree_with_same_root(tree, Nleaves, outfile, aln, optimize=True):
         treecopy = Phylo.read(tree, 'newick')
     else:
         treecopy = copy.deepcopy(tree)
-
     remove_polytomies(treecopy)
     assert(len(treecopy.root.clades) == 2)
 
@@ -133,14 +131,14 @@ def subtree_with_same_root(tree, Nleaves, outfile, aln, optimize=True):
     n_right = right.count_terminals()
 
 
-    n_left_sampled = np.min((n_left, Nleaves * n_left / (n_left + n_right)))
+    n_left_sampled = np.min((n_left, int(Nleaves * n_left / (n_left + n_right))))
     n_left_sampled = np.max((n_left_sampled, 5))  # make sure we have at least one
     left_terminals = left.get_terminals()
     left_sample_idx = np.random.choice(np.arange(len(left_terminals)), size=n_left_sampled, replace=False)
     left_sample = [left_terminals[i] for i in left_sample_idx]
 
     # sample to the right of the root
-    n_right_sampled = np.min((n_right, Nleaves * n_right / (n_left + n_right)))
+    n_right_sampled = np.min((n_right, int(Nleaves * n_right / (n_left + n_right))))
     n_right_sampled = np.max((n_right_sampled, 5))  # make sure we have at least one
     right_terminals = right.get_terminals()
     right_sample_idx = np.random.choice(np.arange(len(right_terminals)), size=n_right_sampled, replace=False)

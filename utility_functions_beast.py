@@ -9,7 +9,7 @@ import utility_functions_general as gen_utils
 import os, sys
 import subprocess
 from Bio import AlignIO, Phylo
-import StringIO
+from io import StringIO
 from external_binaries import BEAST_BIN
 import treetime
 
@@ -131,7 +131,7 @@ def create_beast_xml(tree, aln, dates, log_file, template_file):
 
     def _set_newick(xml_root, tree):
         xml_nwk = xml_root.find('newick')
-        st_io = StringIO.StringIO()
+        st_io = StringIO()
         Phylo.write(tree, st_io, 'newick', branch_length_only=True)
         xml_nwk.text = st_io.getvalue()
 
