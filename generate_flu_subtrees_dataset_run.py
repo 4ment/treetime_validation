@@ -6,6 +6,7 @@ import datetime
 import subprocess
 import re
 import click
+from Bio import Phylo
 
 import utility_functions_flu as flu_utils
 import utility_functions_general as gen_utils
@@ -93,6 +94,12 @@ def run(size, out_dir, suffix, treetime_file, lsd_file, beast_file, aln_file, tr
     subtree_filename, size = sample_subtree(out_dir, size, suffix, tree_file, aln_file)
 
     if treetime_file is not None:
+        treetime_outdir = os.path.join(out_dir, 'treetime_out')
+        try:
+            os.makedirs(treetime_outdir)
+        except:
+            pass
+
         dates = flu_utils.dates_from_flu_tree(tree_file)
         myTree = treetime.TreeTime(gtr='Jukes-Cantor',
             tree=subtree_filename, aln=aln_file, dates=dates,
@@ -101,6 +108,9 @@ def run(size, out_dir, suffix, treetime_file, lsd_file, beast_file, aln_file, tr
         start = datetime.datetime.now()
         myTree.run(root='best', relaxed_clock=False, max_iter=3, resolve_polytomies=True, do_marginal=False)
         end = datetime.datetime.now()
+
+        treetime_outfile = os.path.join(treetime_outdir, os.path.split(subtree_filename)[-1].replace(".nwk", ".tree"))
+        Phylo.write(myTree.tree, treetime_outfile, 'nexus')
 
         if not os.path.exists(treetime_file):
             try:
