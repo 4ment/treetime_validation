@@ -9,7 +9,7 @@ import utility_functions_general as gen_utils
 import os, sys
 import subprocess
 from Bio import AlignIO, Phylo
-from io import StringIO
+from io import BytesIO as StringIO
 from external_binaries import BEAST_BIN
 import treetime
 

@@ -168,7 +168,7 @@ def run(size, out_dir, suffix, treetime_file, lsd_file, beast_file, aln_file, tr
         print ("Skip LSD run")
 
     if beast_file is not None:
-        _run_beast(size, subtree_filename, out_dir, beast_file, aln, template_file)
+        _run_beast(size, subtree_filename, out_dir, beast_file, aln_file, template_file)
 
 if __name__ == "__main__":
     run()
